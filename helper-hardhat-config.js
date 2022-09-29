@@ -33,10 +33,23 @@ const INITIAL_ANSWER = 200000000000;
 const developmentChains = ['hardhat', 'localhost'];
 const VERIFICATION_BLOCK_CONFIRMATIONS = 6;
 
+const frontEndContractAddressesLocation =
+  '../next-js-defi-staking/networkMapping.json';
+
+const networkConfigLocation = '../next-js-defi-staking/networkConfig.json';
+
+const frontEndAbiLocation = '../next-js-defi-staking/chain-info/contracts';
+
+const abiContractsLocation = './artifacts/contracts/';
+
 module.exports = {
   networkConfig,
   developmentChains,
   VERIFICATION_BLOCK_CONFIRMATIONS,
   DECIMALS,
   INITIAL_ANSWER,
+  networkConfigLocation,
+  frontEndContractAddressesLocation,
+  frontEndAbiLocation,
+  abiContractsLocation,
 };
