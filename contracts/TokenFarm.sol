@@ -95,12 +95,14 @@ contract TokenFarm is Ownable {
         }
     }
 
-    function unstakeTokens(address _token) public {
+    function unstakeTokens(address _token, uint256 _amount) public {
         uint256 balance = stakingBalance[_token][msg.sender];
         require(balance > 0, "Staking balance cannot be 0");
-        IERC20(_token).transfer(msg.sender, balance);
-        stakingBalance[_token][msg.sender] = 0;
-        uniqueTokensStaked[msg.sender]--;
+        IERC20(_token).transfer(msg.sender, _amount);
+        stakingBalance[_token][msg.sender] -= _amount;
+        if (stakingBalance[_token][msg.sender] == 0) {
+            uniqueTokensStaked[msg.sender]--;
+        }
     }
 
     function updateUniqueTokensStaked(address _user, address _token) internal {
