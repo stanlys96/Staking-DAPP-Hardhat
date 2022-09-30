@@ -39,13 +39,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   const totalSupply = await dappTokenContract.totalSupply();
 
-  // const tx = await dappTokenContract.transfer(
-  //   tokenFarm.address,
-  //   (totalSupply - KEPT_BALANCE).toLocaleString('fullwide', {
-  //     useGrouping: false,
-  //   })
-  // );
-  // await tx.wait(1);
+  const tx = await dappTokenContract.transfer(
+    tokenFarm.address,
+    (totalSupply - KEPT_BALANCE).toLocaleString('fullwide', {
+      useGrouping: false,
+    })
+  );
+  await tx.wait(1);
 
   if (
     !developmentChains.includes(network.name) &&
