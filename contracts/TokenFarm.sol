@@ -5,23 +5,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
+// Recompile - 4
 error TokenFarm__AddressLessThan1DayForDappToken(address spender);
+error TokenFarm__BalanceMustBeMoreThanZero();
 
 contract TokenFarm is Ownable {
     // mapping token address -> staker address -> amount
     mapping(address => mapping(address => uint256)) public stakingBalance;
+    // mapping staker address -> token address -> reward
+    mapping(address => mapping(address => uint256)) public stakingReward;
     mapping(address => uint256) public uniqueTokensStaked;
     mapping(address => address) public tokenPriceFeedMapping;
     mapping(address => uint256) public addressToLastGetDappToken;
     address[] public stakers;
     address[] public allowedTokens;
     IERC20 public dappToken;
-
-    // stakeTokens
-    // unstakeTokens
-    // issueTokens
-    // addAllowedTokens
-    // getEthValue
 
     constructor(address _dappTokenAddress) {
         dappToken = IERC20(_dappTokenAddress);
@@ -31,24 +29,22 @@ contract TokenFarm is Ownable {
         public
         onlyOwner
     {
-        tokenPriceFeedMapping[_token] = _priceFeed;
-    }
-
-    function issueTokens() public onlyOwner {
-        // Issue tokens to all stakers
-        for (uint256 i = 0; i < stakers.length; i++) {
-            address recipient = stakers[i];
-            uint256 userTotalValue = getUserTotalValue(recipient);
-            dappToken.transfer(recipient, userTotalValue);
-            // send them a token reward
-            // dappToken.transfer(recipient, );
-            // based on their total value locked
+        bool foundToken = false;
+        uint256 allowedTokensLength = allowedTokens.length;
+        for (uint256 index = 0; index < allowedTokensLength; index++) {
+            if (allowedTokens[index] == _token) {
+                foundToken = true;
+                break;
+            }
         }
+        if (!foundToken) {
+            allowedTokens.push(_token);
+        }
+        tokenPriceFeedMapping[_token] = _priceFeed;
     }
 
     function getUserTotalValue(address _user) public view returns (uint256) {
         uint256 totalValue = 0;
-        require(uniqueTokensStaked[_user] > 0, "No tokens staked!");
         for (uint256 i = 0; i < allowedTokens.length; i++) {
             totalValue += getUserSingleTokenValue(_user, allowedTokens[i]);
         }
@@ -72,7 +68,6 @@ contract TokenFarm is Ownable {
         view
         returns (uint256, uint256)
     {
-        // priceFeedAddress
         address priceFeedAddress = tokenPriceFeedMapping[_token];
         AggregatorV3Interface priceFeed = AggregatorV3Interface(
             priceFeedAddress
@@ -83,8 +78,6 @@ contract TokenFarm is Ownable {
     }
 
     function stakeTokens(uint256 _amount, address _token) public {
-        // what tokens can they stake?
-        // how much can they stake?
         require(_amount > 0, "Amount must be more than zero!");
         require(tokenIsAllowed(_token), "Token is currently not allowed!");
         IERC20(_token).transferFrom(msg.sender, address(this), _amount);
@@ -98,10 +91,27 @@ contract TokenFarm is Ownable {
     function unstakeTokens(address _token, uint256 _amount) public {
         uint256 balance = stakingBalance[_token][msg.sender];
         require(balance > 0, "Staking balance cannot be 0");
+        require(
+            stakingBalance[_token][msg.sender] - _amount >= 0,
+            "balance - amount unstaked must be more than or equal to zero"
+        );
         IERC20(_token).transfer(msg.sender, _amount);
         stakingBalance[_token][msg.sender] -= _amount;
         if (stakingBalance[_token][msg.sender] == 0) {
             uniqueTokensStaked[msg.sender]--;
+            if (uniqueTokensStaked[msg.sender] == 0) {
+                for (uint256 index = 0; index < stakers.length; index++) {
+                    if (stakers[index] == msg.sender) {
+                        if (index >= stakers.length) return;
+
+                        for (uint i = index; i < stakers.length - 1; i++) {
+                            stakers[i] = stakers[i + 1];
+                        }
+                        stakers.pop();
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -109,10 +119,6 @@ contract TokenFarm is Ownable {
         if (stakingBalance[_token][_user] <= 0) {
             uniqueTokensStaked[_user] += 1;
         }
-    }
-
-    function addAllowedTokens(address _token) public onlyOwner {
-        allowedTokens.push(_token);
     }
 
     function tokenIsAllowed(address _token) public view returns (bool) {
@@ -130,5 +136,28 @@ contract TokenFarm is Ownable {
         }
         addressToLastGetDappToken[msg.sender] = block.timestamp;
         dappToken.transfer(msg.sender, 10000000000000000000);
+    }
+
+    function issueRewards() external onlyOwner {
+        for (uint256 i = 0; i < stakers.length; i++) {
+            for (uint256 j = 0; j < allowedTokens.length; j++) {
+                if (stakingBalance[allowedTokens[j]][stakers[i]] > 0) {
+                    uint256 reward = getUserSingleTokenValue(
+                        stakers[i],
+                        allowedTokens[j]
+                    );
+                    stakingReward[stakers[i]][allowedTokens[j]] += reward;
+                }
+            }
+        }
+    }
+
+    function withdrawReward(address _token) public {
+        uint256 totalTokenReward = stakingReward[msg.sender][_token];
+        if (totalTokenReward <= 0) {
+            revert TokenFarm__BalanceMustBeMoreThanZero();
+        }
+        stakingReward[msg.sender][_token] = 0;
+        dappToken.transfer(msg.sender, totalTokenReward);
     }
 }
