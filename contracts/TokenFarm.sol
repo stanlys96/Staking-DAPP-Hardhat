@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-// Recompile - 4
+// Recompile - 5
 error TokenFarm__AddressLessThan1DayForDappToken(address spender);
 error TokenFarm__BalanceMustBeMoreThanZero();
 
@@ -97,22 +97,6 @@ contract TokenFarm is Ownable {
         );
         IERC20(_token).transfer(msg.sender, _amount);
         stakingBalance[_token][msg.sender] -= _amount;
-        if (stakingBalance[_token][msg.sender] == 0) {
-            uniqueTokensStaked[msg.sender]--;
-            if (uniqueTokensStaked[msg.sender] == 0) {
-                for (uint256 index = 0; index < stakers.length; index++) {
-                    if (stakers[index] == msg.sender) {
-                        if (index >= stakers.length) return;
-
-                        for (uint i = index; i < stakers.length - 1; i++) {
-                            stakers[i] = stakers[i + 1];
-                        }
-                        stakers.pop();
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     function updateUniqueTokensStaked(address _user, address _token) internal {

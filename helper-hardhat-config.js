@@ -40,6 +40,13 @@ const networkConfigLocation = '../next-js-defi-staking/networkConfig.json';
 
 const frontEndAbiLocation = '../next-js-defi-staking/chain-info/contracts';
 
+const serverContractAddressesLocation =
+  '../server-defi-staking/networkMapping.json';
+
+const serverNetworkConfigLocation = '../server-defi-staking/networkConfig.json';
+
+const serverAbiLocation = '../server-defi-staking/chain-info/contracts';
+
 const abiContractsLocation = './artifacts/contracts/';
 
 module.exports = {
@@ -52,4 +59,7 @@ module.exports = {
   frontEndContractAddressesLocation,
   frontEndAbiLocation,
   abiContractsLocation,
+  serverContractAddressesLocation,
+  serverNetworkConfigLocation,
+  serverAbiLocation,
 };

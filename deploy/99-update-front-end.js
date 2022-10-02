@@ -5,6 +5,9 @@ const {
   networkConfig,
   networkConfigLocation,
   abiContractsLocation,
+  serverContractAddressesLocation,
+  serverNetworkConfigLocation,
+  serverAbiLocation,
 } = require('../helper-hardhat-config');
 const fs = require('fs');
 
@@ -20,6 +23,12 @@ module.exports = async () => {
 
 async function updateAbi() {
   const contractsAbi = fs.readdirSync(abiContractsLocation);
+  if (!fs.existsSync(frontEndAbiLocation)) {
+    fs.mkdirSync(frontEndAbiLocation);
+  }
+  if (!fs.existsSync(serverAbiLocation)) {
+    fs.mkdirSync(serverAbiLocation);
+  }
   for (let i = 0; i < contractsAbi.length; i++) {
     const level1 = abiContractsLocation + contractsAbi[i];
     // console.log(fs.readdirSync(level1));
@@ -49,6 +58,16 @@ async function updateAbi() {
                 console.log(err);
               }
             );
+            fs.appendFile(serverAbiLocation + '/' + level2Arr[k], '', (err) => {
+              console.log(err);
+            });
+            fs.copyFile(
+              level2 + '/' + level2Arr[k],
+              serverAbiLocation + '/' + level2Arr[k],
+              (err) => {
+                console.log(err);
+              }
+            );
           }
         }
       } else {
@@ -63,26 +82,37 @@ async function updateAbi() {
               console.log(err);
             }
           );
+          fs.appendFile(serverAbiLocation + '/' + level1Arr[j], '', (err) => {
+            console.log(err);
+          });
+          fs.copyFile(
+            level1 + '/' + level1Arr[j],
+            serverAbiLocation + '/' + level1Arr[j],
+            (err) => {
+              console.log(err);
+            }
+          );
         }
       }
     }
-  }
-  if (!fs.existsSync(frontEndAbiLocation)) {
-    fs.mkdirSync(frontEndAbiLocation);
   }
 }
 
 async function updateNetworkConfig() {
   fs.writeFileSync(networkConfigLocation, JSON.stringify(networkConfig));
+  fs.writeFileSync(serverNetworkConfigLocation, JSON.stringify(networkConfig));
 }
 
 async function updateContractAddresses() {
   const tokenFarm = await ethers.getContract('TokenFarm');
   const dappToken = await ethers.getContract('DappToken');
+  const chainId = network.config.chainId.toString();
   const contractAddresses = JSON.parse(
     fs.readFileSync(frontEndContractAddressesLocation, 'utf-8')
   );
-  const chainId = network.config.chainId.toString();
+  const serverContractAddresses = JSON.parse(
+    fs.readFileSync(serverContractAddressesLocation, 'utf-8')
+  );
 
   if (chainId in contractAddresses) {
     if (!contractAddresses[chainId]['TokenFarm'].includes(tokenFarm.address)) {
@@ -100,6 +130,28 @@ async function updateContractAddresses() {
   fs.writeFileSync(
     frontEndContractAddressesLocation,
     JSON.stringify(contractAddresses)
+  );
+
+  if (chainId in serverContractAddresses) {
+    if (
+      !serverContractAddresses[chainId]['TokenFarm'].includes(tokenFarm.address)
+    ) {
+      serverContractAddresses[chainId]['TokenFarm'].push(tokenFarm.address);
+    }
+    if (
+      !serverContractAddresses[chainId]['DappToken'].includes(dappToken.address)
+    ) {
+      serverContractAddresses[chainId]['DappToken'].push(dappToken.address);
+    }
+  } else {
+    serverContractAddresses[chainId] = {
+      TokenFarm: [tokenFarm.address],
+      DappToken: [dappToken.address],
+    };
+  }
+  fs.writeFileSync(
+    serverContractAddressesLocation,
+    JSON.stringify(serverContractAddresses)
   );
 }
 
