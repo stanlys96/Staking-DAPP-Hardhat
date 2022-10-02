@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-// Recompile - 5
+// Recompile - 6
 error TokenFarm__AddressLessThan1DayForDappToken(address spender);
 error TokenFarm__BalanceMustBeMoreThanZero();
 
@@ -114,12 +114,12 @@ contract TokenFarm is Ownable {
         return false;
     }
 
-    function get10DappToken() public {
+    function get100DappToken() public {
         if (block.timestamp - addressToLastGetDappToken[msg.sender] < 1 days) {
             revert TokenFarm__AddressLessThan1DayForDappToken(msg.sender);
         }
         addressToLastGetDappToken[msg.sender] = block.timestamp;
-        dappToken.transfer(msg.sender, 10000000000000000000);
+        dappToken.transfer(msg.sender, 100000000000000000000);
     }
 
     function issueRewards() external onlyOwner {
